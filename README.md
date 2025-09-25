@@ -1,61 +1,61 @@
 # Storyboard to Excel Generator
 
-Tools for consolidating storyboard image folders into a single Excel workbook, with one worksheet per storyboard, images embedded in cells, and frame numbering for quick reviews.
+Command-line tools for consolidating storyboard image folders into an Excel workbook. Each subfolder becomes a worksheet, images are resized and embedded into cells, and frames are numbered for easy review.
 
 ## Requirements
 
-- Python 3.10+ (確認済み: 3.13)
+- Python 3.10 or newer (verified with 3.13)
 - Python packages: `Pillow`, `XlsxWriter`
-  - インストール例: `python -m pip install pillow xlsxwriter`
+  - Install via `python -m pip install pillow xlsxwriter`
 
 ## Files
 
-- `generate_storyboard_workbook.py` – メインスクリプト。CLI から実行して設定を細かく指定できます。
-- `generate_storyboard_workbook.bat` – Windows 用ラッパー。バッチから同じオプションを渡せます。
+- `generate_storyboard_workbook.py` – primary CLI script with configurable options.
+- `generate_storyboard_workbook.bat` – Windows helper that forwards arguments to the Python script.
 
-両ファイルは同一ディレクトリに配置してください。
+Keep both files in the same directory.
 
-## Basic Usage
+## Quick Start
 
-1. コマ画像が入ったフォルダ階層を用意します。（各サブフォルダが 1 作品）
-2. コマンドプロンプトまたは PowerShell を開き、本ディレクトリへ移動します。
-3. 次のいずれかを実行します。
+1. Prepare a root folder containing storyboard subfolders. Each subfolder should contain the frames for one storyboard.
+2. Open Command Prompt or PowerShell in this repository directory.
+3. Run either command below (arguments are interchangeable):
 
 ```powershell
-# Python 直接
-python generate_storyboard_workbook.py --root "C:\path\to\storyboard"
+# Direct Python execution
+python generate_storyboard_workbook.py --root "C:\path\to\storyboards"
 
-# バッチ経由（同じ引数を使用可能）
-generate_storyboard_workbook.bat --root "C:\path\to\storyboard"
+# Windows batch wrapper
+generate_storyboard_workbook.bat --root "C:\path\to\storyboards"
 ```
 
-出力ファイル名を省略した場合、`storyboard_collection_YYYYMMDD_HHMMSS.xlsx` が生成されます。
+If `--output` is omitted, the script creates `storyboard_collection_YYYYMMDD_HHMMSS.xlsx` in the root folder.
 
 ## Key Options
 
-| オプション | 説明 | 既定値 |
+| Option | Description | Default |
 | --- | --- | --- |
-| `--root PATH` | 絵コンテフォルダのルート | カレントディレクトリ |
-| `--output PATH` | 出力 Excel パス | 自動命名 |
-| `--max-width N` | 画像最大幅 (px) | 800 |
-| `--max-height N` | 画像最大高さ (px) | 600 |
-| `--row-padding N` | 行高さに加算する余白 (px) | 10 |
-| `--col-padding N` | 列幅に加算する余白 (px) | 20 |
-| `--frame-start N` | フレーム番号開始値 | 1 |
-| `--exclude NAME ...` | 除外するサブフォルダ名（大文字小文字無視、複数可） | `Backup`, `Bakcup` |
-| `--password STR` | シート保護パスワード | `lock` |
-| `--no-protect` | シート保護を無効化 | 指定なし |
+| `--root PATH` | Root folder containing storyboard subdirectories | Current directory |
+| `--output PATH` | Output Excel path | Auto-generated name |
+| `--max-width N` | Maximum image width (px) | 800 |
+| `--max-height N` | Maximum image height (px) | 600 |
+| `--row-padding N` | Extra pixels added to each row | 10 |
+| `--col-padding N` | Extra pixels added to the image column | 20 |
+| `--frame-start N` | Starting frame number | 1 |
+| `--exclude NAME ...` | Subfolders to skip (case-insensitive, multiple allowed) | `Backup`, `Bakcup` |
+| `--password STR` | Worksheet protection password | `lock` |
+| `--no-protect` | Disable worksheet protection | Off |
 
-画像はリサイズ後にセルへ埋め込まれ、A 列にフレーム番号、B 列に画像、C 列にファイル名を配置します。
+Images are embedded in column B, frame numbers appear in column A, and filenames are written in column C.
 
 ## Notes
 
-- シート保護は既定で有効（パスワード `lock`）。変更したい場合は `--password` または `--no-protect` を利用してください。
-- 画像ファイルは `.png`, `.jpg`, `.jpeg`, `.bmp`, `.gif`, `.tif`, `.tiff` をサポートします。
-- フォルダ内に画像が無い場合、その旨をシートに記載します。
+- Worksheet protection is enabled by default. Change the password with `--password` or disable protection with `--no-protect`.
+- Supported image formats: `.png`, `.jpg`, `.jpeg`, `.bmp`, `.gif`, `.tif`, `.tiff`.
+- Empty folders are noted directly on the worksheet.
+- A Japanese translation of this documentation is available in `README_ja.md`.
 
 ## Troubleshooting
 
-- `ModuleNotFoundError` が出た場合は依存パッケージが未インストールです。`pip install pillow xlsxwriter` を実行してください。
-- 文字化けする場合は端末のコードページを UTF-8 (`chcp 65001`) に切り替えると改善します。
-
+- `ModuleNotFoundError`: install the required packages with `pip install pillow xlsxwriter`.
+- Garbled characters in the console: switch to UTF-8 with `chcp 65001` before running the script.
