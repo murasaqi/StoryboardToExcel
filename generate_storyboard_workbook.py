@@ -14,6 +14,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable, List, Sequence, Tuple
 
+from io import BytesIO
+
 from PIL import Image
 import xlsxwriter
 
@@ -48,7 +50,13 @@ def sanitize_sheet_name(name: str, existing: Sequence[str]) -> str:
 
 def iter_target_directories(root: Path, excludes: Iterable[str]) -> List[Path]:
     normalized = {name.lower() for name in excludes}
-    dirs = [p for p in root.iterdir() if p.is_dir() and p.name.lower() not in normalized]
+    dirs = [
+        p
+        for p in root.iterdir()
+        if p.is_dir()
+        and not p.name.startswith('.')
+        and p.name.lower() not in normalized
+    ]
     return sorted(dirs, key=lambda d: d.name)
 
 
@@ -79,11 +87,12 @@ def embed_images_for_folder(
         worksheet.write(1, 1, "画像が見つかりませんでした", text_format)
         return 0
 
-    precomputed: List[Tuple[Path, int, int, float]] = []
+    precomputed: List[Tuple[Path, bytes, int, int, float]] = []
     max_scaled_width = 0
 
     for image_path in files:
-        with Image.open(image_path) as img:
+        image_bytes = image_path.read_bytes()
+        with Image.open(BytesIO(image_bytes)) as img:
             width_px, height_px = img.size
         scale = compute_scale(width_px, height_px, max_width, max_height)
         scaled_width = int(round(width_px * scale))
@@ -92,7 +101,7 @@ def embed_images_for_folder(
             scaled_width = width_px
             scaled_height = height_px
         max_scaled_width = max(max_scaled_width, scaled_width)
-        precomputed.append((image_path, scaled_width, scaled_height, scale))
+        precomputed.append((image_path, image_bytes, scaled_width, scaled_height, scale))
 
     worksheet.set_column(0, 0, 12)
     worksheet.set_column_pixels(1, 1, max_scaled_width + col_padding)
@@ -101,15 +110,17 @@ def embed_images_for_folder(
     current_row = 1
     frame_number = frame_start
 
-    for image_path, scaled_width, scaled_height, scale in precomputed:
+    for image_path, image_bytes, scaled_width, scaled_height, scale in precomputed:
         worksheet.set_row_pixels(current_row, scaled_height + row_padding)
         worksheet.write_number(current_row, 0, frame_number, number_format)
+        image_stream = BytesIO(image_bytes)
         options = {
             "x_scale": scale,
             "y_scale": scale,
             "locked": True,
+            "image_data": image_stream,
         }
-        worksheet.embed_image(current_row, 1, str(image_path), options)
+        worksheet.insert_image(current_row, 1, image_path.name, options)
         worksheet.write(current_row, 2, image_path.name, text_format)
         frame_number += 1
         current_row += 1
@@ -211,7 +222,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         default=["backup", "bakcup"],
         help="除外するフォルダ名 (case-insensitive)",
     )
-    parser.add_argument("--password", default="lock", help="シート保護パスワード (空文字で保護なし)")
+    parser.add_argument("--password", default="", help="シート保護パスワード (空文字で保護なし)")
     parser.add_argument("--no-protect", action="store_true", help="シート保護を行わない")
     return parser.parse_args(argv)
 
@@ -253,3 +264,4 @@ def main(argv: Sequence[str]) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
+
